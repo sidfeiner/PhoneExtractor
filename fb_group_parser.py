@@ -1,5 +1,14 @@
 __author__ = 'Sid'
 
+##############################################
+#
+# Extract open facebook groups
+#
+# Extract anybody who posted/commented
+# with the phone numbers/emails he posted
+#
+##############################################
+
 import re, requests, os, time, export_to_file
 from datetime import datetime
 from selenium import webdriver
@@ -119,7 +128,7 @@ class GroupParser(object):
 		Extract group info. Browser is already at group page
 		:return Group instance
 		"""
-		group_name_xpath = '//title/text()'
+		group_name_xpath = '//input[@placeholder="Search Facebook"]/@value'
 		group_members_xpath = '//span[@id="count_text"]/text()'
 		group_members_amount_regex = re.compile(r'[\d,]+')
 
@@ -331,7 +340,9 @@ class GroupParser(object):
 
 	def _parse_page(self, group, parse_src, output_file):
 		"""
-		Parse the page open in browser and write in to the file.
+		:param group: current Group instance
+		:param parse_src: src text to parse from
+		:param output_file: handle to file where to write the results
 		"""
 
 		html_tree = html.fromstring(parse_src)
@@ -440,7 +451,12 @@ class GroupParser(object):
 			self._init_output_file(output)
 			for i in xrange(2, reload_amount + 1):
 				# Parse reload_amount of pages
-				result_tuple = self._parse_page(current_group, payload_html, output)
+
+
+				try:
+					result_tuple = self._parse_page(current_group, payload_html, output)
+				except html.etree.XMLSyntaxError:
+					print "Didn't find XML in URL: {0}".format(next_url)
 				if not result_tuple:
 					# Probably got to the end
 					return True, i
@@ -464,22 +480,19 @@ class GroupParser(object):
 			return False
 
 
-	def _parse_all_groups(self, user_id, reload_amount = None):
+	def _parse_all_groups(self, user_id, reload_amount=400):
 		"""
 		start parsing the groups
 		"""
-
 		reload_amount = stronger_value(self.reload_amount, reload_amount)
 		for group_id in self.group_ids:
-			absolute_crawl = self._parse_group(group_id, user_id, reload_amount = reload_amount)
-			if absolute_crawl:
-				print 'GROU'
+			absolute_crawl = self._parse_group(group_id, user_id, reload_amount=reload_amount)
 
-
-	def run(self, reload_amount = None):
+	def run(self, reload_amount=None):
 		"""
 		start running the parser
 		"""
+		reload_amount = stronger_value(self.reload_amount, reload_amount)
 		self.driver = webdriver.Chrome()
 		my_id = self.init_connect()  # Connect to facebook
 
@@ -595,7 +608,7 @@ def get_reload_amount():
 	amount = raw_input("Enter the amount of pages you want to load in each group: ")
 	while not amount.isdigit():
 		amount = raw_input("Enter the amount of pages you want to load in each group: ")
-	return amount
+	return int(amount)
 
 def main():
 	"""
