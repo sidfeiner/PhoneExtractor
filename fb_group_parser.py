@@ -601,12 +601,10 @@ def main():
 	"""
 	Gets input for script
 	"""
-	"""group_ids = get_group_ids()  # gets a set
+	group_ids = get_group_ids()  # gets a set
 	email, password = get_user_info()
-	amount = get_reload_amount()"""
-	group_ids = {'387743724707970'}
-	email, password = ('sidfeiner@gmail.com', 'Qraaynem23')
-	amount = 40
+	amount = get_reload_amount()
+
 	group_parser = GroupParser(email=email, password=password, reload_amount=amount, group_ids=group_ids)
 	group_parser.run()
 
