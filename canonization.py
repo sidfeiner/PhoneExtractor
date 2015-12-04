@@ -1,14 +1,14 @@
 # -*- encoding: utf-8 -*-
 
-#################
+##################################
 #
 # canonization
+# Canonize phone numbers
+# from different countries
 #
-#################
-import sys
-sys.path.append(r'C:\Users\Sid\Documents\GitHub\PhoneExtractor')
-import re, phone_formats
+##################################
 
+import re, phone_formats
 
 class CountryCanonizer(object):
 	"""
