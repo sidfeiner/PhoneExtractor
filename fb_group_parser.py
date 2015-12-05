@@ -9,19 +9,24 @@ __author__ = 'Sid'
 #
 ##############################################
 
-import re, requests, os, time, export_to_file
+import re
+import time
 from datetime import datetime
-from selenium import webdriver
-from lxml import html
 from base64 import b64encode
 import json
-import canonization, phone_formats
 from HTMLParser import HTMLParser
+
+from selenium import webdriver
+from lxml import html
+
+import export_to_file
+import canonization
 
 # Constants
 _USERNAME = 'username_from_url'
 _FID = 'fid_from_url'
 _POST_ID = 'post_id'
+
 
 class GroupParser(object):
 	def __init__(self, email, password, reload_amount, group_ids):
@@ -70,28 +75,28 @@ class GroupParser(object):
 		xpaths = {}
 
 		# xpath to full post, containing comments (a post has an attribute named 'data-ft' with a tl_objid key
-		xpaths['full_post' ]= "//div[contains(@data-ft,'tl_objid')]"
+		xpaths['full_post'] = "//div[contains(@data-ft,'tl_objid')]"
 
 		# xpaths to the content itself and the comment section
 		xpaths['post_content'] = ".//p/text()"
 
 		# Author Xpath's. Relative to post
-		xpaths['post_author'] = './/a[@data-hovercard][2]' # First is link from picture, withour name
-		xpaths['author_username'] = './@href' # URL's need further parsing
+		xpaths['post_author'] = './/a[@data-hovercard][2]'  # First is link from picture, withour name
+		xpaths['author_username'] = './@href'  # URL's need further parsing
 		xpaths['author_fid'] = './@data-hovercard'
 		xpaths['author_fullname'] = './text()'
 
 		# Comment Xpath's
 		xpaths['post_comments'] = ".//div[contains(@class, 'UFIContainer')]//div[@class='UFICommentContent']"
 		xpaths['comment_meta'] = './/a[contains(@class,"UFICommentActorName")]'
-		xpaths['comment_author_fid'] = './@data-hovercard' # URL's need further parsing, relative to meta
-		xpaths['comment_author_username'] = './@href' # URL's need further parsing, relative to meta
-		xpaths['comment_author_fullname'] = './span/text()' # relative to meta
+		xpaths['comment_author_fid'] = './@data-hovercard'  # URL's need further parsing, relative to meta
+		xpaths['comment_author_username'] = './@href'  # URL's need further parsing, relative to meta
+		xpaths['comment_author_fullname'] = './span/text()'  # relative to meta
 
-		xpaths['comment_text'] = './/span[contains(@class,"UFICommentBody")]' # Relative to comment
+		xpaths['comment_text'] = './/span[contains(@class,"UFICommentBody")]'  # Relative to comment
 
-		xpaths['post_timestamp'] = './/abbr/@data-utime[1]' # Relative to post
-		xpaths['post_id'] = './@id' # Relative to post, needed further parsing
+		xpaths['post_timestamp'] = './/abbr/@data-utime[1]'  # Relative to post
+		xpaths['post_id'] = './@id'  # Relative to post, needed further parsing
 
 		return xpaths
 
@@ -162,7 +167,7 @@ class GroupParser(object):
 
 		regex = self._regexes[target_parse]
 
-		match = regex.search(xpath_result[0]) # Choose only first result from list
+		match = regex.search(xpath_result[0])  # Choose only first result from list
 		if not match:
 			return ''
 
@@ -195,7 +200,7 @@ class GroupParser(object):
 		if full_name_xpath:
 			full_name = full_name_xpath[0]
 		else:
-			#No full name exists
+			# No full name exists
 			full_name = ''
 
 		return UserInfo(user_name=user_name, id=fid, full_name=full_name)
@@ -208,7 +213,7 @@ class GroupParser(object):
 		info_tuples = set()
 
 		for country, canonizer in self._canonizers.iteritems():
-			#Find all phone numbers and canonize
+			# Find all phone numbers and canonize
 			country_phone = canonizer._country_phone
 			finding_regex = country_phone.to_find_regex(strict=False, canonized=False, optional_country=True, stuck_zero=True)
 			phone_matches = finding_regex.finditer(text)
@@ -230,7 +235,7 @@ class GroupParser(object):
 
 		emails = self._regexes['emails'].findall(text)
 		for email in emails:
-			canonized_email = email[0].replace('#&064;', '@') # email is a tuple. email[0] is full email
+			canonized_email = email[0].replace('#&064;', '@')  # email is a tuple. email[0] is full email
 			info_tuples.add((canonized_email, canonized_email.lower(), 'email'))
 
 		return info_tuples
@@ -259,7 +264,6 @@ class GroupParser(object):
 		post_content = '\n'.join(post_content_lst)
 
 		return self._parse_info_from_text(post_content)
-
 
 	def _parse_user_info(self, post_node):
 		"""
@@ -299,14 +303,13 @@ class GroupParser(object):
 
 		return None
 
-
 	def _parse_user_infos_from_comment(self, comments_xpath):
 		"""
-		:param comment_xpath: xpath containing all comments
+		:param comments_xpath: xpath containing all comments
 		:return: distinct user_infos who commented
 		"""
 
-		all_commenters = set() # Set of user_info's
+		all_commenters = set()  # Set of user_info's
 
 		for comment in comments_xpath:
 			user_info = self._parse_user_from_comment(comment)
@@ -337,7 +340,6 @@ class GroupParser(object):
 		post_id = self._parse_from_xpath(post_id_path, _POST_ID)
 		return Post(id=post_id, date_time=timestamp), timestamp
 
-
 	def _parse_page(self, group, parse_src, output_file):
 		"""
 		:param group: current Group instance
@@ -359,8 +361,6 @@ class GroupParser(object):
 			current_user_post = UserPost(author=author_info, group=group, post=current_post, commenters=commenters_infos)
 			export_to_file.write_single_user_post(current_user_post, output_file)
 
-
-
 		return current_post.id, last_timestamp
 
 	def _get_next_url(self, last_post_id, last_timestamp, group_id, user_id, reload_id):
@@ -369,7 +369,7 @@ class GroupParser(object):
 		:param last_timestamp: unix timestamp of the last pod extracted
 		:param group_id: group_id of group we are currently extracting
 		:param user_id: user id of current connected user
-		:param reload: index of current reload (starts with 1)
+		:param reload_id: index of current reload (starts with 1)
 		:return: formatted string
 		"""
 
@@ -380,7 +380,7 @@ class GroupParser(object):
 		'&__dyn=7AmajEzUGBym5Q9UoHaEWC5ECiq2WbF3oyupFLFwxBxCbzES2N6y8-bxu3fzoaqwFUgx-y28b9J1efKiVWxe6okzEswLDz8Sm2uVUKmFAdAw'
 		'&__req=jsonp_{reload}&__rev=2071590&__adt={reload}')
 
-		cursor = "{timestamp}:{post_id}".format(timestamp=last_timestamp - 10 * 60, post_id=last_post_id) # Remove 10 minutes fro timestamp to be sure
+		cursor = "{timestamp}:{post_id}".format(timestamp=last_timestamp - 10 * 60, post_id=last_post_id)  # Remove 10 minutes fro timestamp to be sure
 		encoded_cursor = b64encode(cursor)
 
 		return base_url.format(cursor=encoded_cursor,
@@ -393,7 +393,7 @@ class GroupParser(object):
 		:param ajax_response: full response
 		"""
 
-		full_json_match = self._regexes['json_from_html'].search(ajax_response) # Keep only json string
+		full_json_match = self._regexes['json_from_html'].search(ajax_response)  # Keep only json string
 		if not full_json_match:
 			return None
 
@@ -419,7 +419,7 @@ class GroupParser(object):
 		"""
 
 		first_line = output_file.readline().upper()
-		output_file.seek(0) # Set cursor to beginning
+		output_file.seek(0)  # Set cursor to beginning
 
 		if 'GROUP_ID' in first_line:
 			return False
@@ -430,7 +430,6 @@ class GroupParser(object):
 
 		return True
 
-
 	def _parse_group(self, group_id, user_id, reload_amount=400):
 		"""
 		parse single group
@@ -438,9 +437,9 @@ class GroupParser(object):
 		return false if it didn't get to the end
 		"""
 
-		group_url = 'https://facebook.com/{id}'.format(id = group_id)
+		group_url = 'https://facebook.com/{id}'.format(id=group_id)
 
-		self.driver.get(group_url.format(id = group_id))
+		self.driver.get(group_url.format(id=group_id))
 		time.sleep(5)
 		current_group = self._extract_group_info(group_id)
 
@@ -451,8 +450,6 @@ class GroupParser(object):
 			self._init_output_file(output)
 			for i in xrange(2, reload_amount + 1):
 				# Parse reload_amount of pages
-
-
 				try:
 					result_tuple = self._parse_page(current_group, payload_html, output)
 				except html.etree.XMLSyntaxError:
@@ -479,7 +476,6 @@ class GroupParser(object):
 
 			return False
 
-
 	def _parse_all_groups(self, user_id, reload_amount=400):
 		"""
 		start parsing the groups
@@ -499,7 +495,7 @@ class GroupParser(object):
 		if my_id is None:
 			raise Exception("User id not found in homepage")
 
-		self._parse_all_groups(user_id=my_id, reload_amount = reload_amount)
+		self._parse_all_groups(user_id=my_id, reload_amount=reload_amount)
 		self.driver.quit()
 
 
@@ -533,9 +529,8 @@ class Post(object):
 
 		self.date_time = post_datetime
 
-
 class Group(object):
-	def __init__(self, id = '', name = '', members = None):
+	def __init__(self, id='', name='', members=None):
 		self.id = id
 		self.name = name
 		self.members = members
@@ -609,6 +604,7 @@ def get_reload_amount():
 	while not amount.isdigit():
 		amount = raw_input("Enter the amount of pages you want to load in each group: ")
 	return int(amount)
+
 
 def main():
 	"""

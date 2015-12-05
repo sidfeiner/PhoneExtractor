@@ -1,2 +1,3 @@
 *.pyc
 .idea*
+fb_group_parser.py
