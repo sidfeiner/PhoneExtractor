@@ -41,9 +41,10 @@ def write_single_user(group, post, user, action_string, output_file):
 
 		if not user.infos:
 			# No infos, just write user
-			output_file.write("{g_id}\t{g_name}\t{p_id}\t{p_time}\t{action}\t{u_f_name}\t{u_u_name}\t{u_id}\t{i_kind}\t{i_can_value}\t{i_ori_value}\r\n"
+			output_file.write("{g_id}\t{g_name}\t{g_amount}\t{p_id}\t{p_time}\t{action}\t{u_f_name}\t{u_u_name}\t{u_id}\t{i_kind}\t{i_can_value}\t{i_ori_value}\r\n"
 				.format(g_id=group_id,
 			            g_name=group_name.encode('utf-8'),
+			            g_amount=group.members,
 			            p_id=post_id,
 			            p_time=formatted_string,
 			            action=action_string,
@@ -55,9 +56,10 @@ def write_single_user(group, post, user, action_string, output_file):
 			            i_ori_value=''))
 
 		for info in user.infos:
-			output_file.write("{g_id}\t{g_name}\t{p_id}\t{p_time}\t{action}\t{u_f_name}\t{u_u_name}\t{u_id}\t{i_kind}\t{i_can_value}\t{i_ori_value}\r\n"
+			output_file.write("{g_id}\t{g_name}\t{g_amount}\t{p_id}\t{p_time}\t{action}\t{u_f_name}\t{u_u_name}\t{u_id}\t{i_kind}\t{i_can_value}\t{i_ori_value}\r\n"
 				.format(g_id=group_id,
 			            g_name=group_name.encode('utf-8'),
+			            g_amount=group.members,
 			            p_id=post_id,
 			            p_time=formatted_string,
 			            action=action_string,
