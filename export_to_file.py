@@ -42,35 +42,38 @@ def write_single_user(group, post, user, action_string, output_file):
 		if not user.infos:
 			# No infos, just write user
 			output_file.write("{g_id}\t{g_name}\t{g_amount}\t{p_id}\t{p_time}\t{action}\t{u_f_name}\t{u_u_name}\t{u_id}\t{i_kind}\t{i_can_value}\t{i_ori_value}\r\n"
-				.format(g_id=group_id,
+				.format(g_id=group_id.encode('utf-8'),
 			            g_name=group_name.encode('utf-8'),
 			            g_amount=group.members,
-			            p_id=post_id,
-			            p_time=formatted_string,
-			            action=action_string,
+			            p_id=post_id.encode('utf-8'),
+			            p_time=formatted_string.encode('utf-8'),
+			            action=action_string.encode('utf-8'),
 			            u_f_name=full_name.encode('utf-8'),
-			            u_u_name=user_name,
-			            u_id=user_id,
+			            u_u_name=user_name.encode('utf-8'),
+			            u_id=user_id.encode('utf-8'),
 			            i_kind='',
 			            i_can_value='',
 			            i_ori_value=''))
 
 		for info in user.infos:
 			output_file.write("{g_id}\t{g_name}\t{g_amount}\t{p_id}\t{p_time}\t{action}\t{u_f_name}\t{u_u_name}\t{u_id}\t{i_kind}\t{i_can_value}\t{i_ori_value}\r\n"
-				.format(g_id=group_id,
+				.format(g_id=group_id.encode('utf-8'),
 			            g_name=group_name.encode('utf-8'),
 			            g_amount=group.members,
-			            p_id=post_id,
-			            p_time=formatted_string,
-			            action=action_string,
+			            p_id=post_id.encode('utf-8'),
+			            p_time=formatted_string.encode('utf-8'),
+			            action=action_string.encode('utf-8'),
 			            u_f_name=full_name.encode('utf-8'),
-			            u_u_name=user_name,
-			            u_id=user_id,
-			            i_kind=info[2],
-			            i_can_value=info[1],
-			            i_ori_value=info[0]))
+			            u_u_name=user_name.encode('utf-8'),
+			            u_id=user_id.encode('utf-8'),
+			            i_kind=info[2].encode('utf-8'),
+			            i_can_value=info[1].encode('utf-8'),
+			            i_ori_value=info[0].encode('utf-8')
+			            )
+			                  )
+
 	except UnicodeEncodeError:
-		print 'COULDNT WRITE POST', post_id
+		print 'COULDNT WRITE POST', post_id, group_id, group_name.encode('utf-8'), full_name.encode('utf-8'), user_name, info[1], info[0]
 
 def write_single_user_post(user_post, output_file):
 	"""
