@@ -27,6 +27,10 @@ _USERNAME = 'username_from_url'
 _FID = 'fid_from_url'
 _POST_ID = 'post_id'
 
+# Exceptions
+class ClosedGroupException(Exception):
+	def __init__(self, message):
+		super(ClosedGroupException, self).__init__(message)
 
 class GroupParser(object):
 	def __init__(self, email, password, reload_amount, group_ids):
@@ -78,7 +82,7 @@ class GroupParser(object):
 		xpaths['full_post'] = "//div[contains(@data-ft,'tl_objid')]"
 
 		# xpaths to the content itself and the comment section
-		xpaths['post_content'] = ".//p/text()"
+		xpaths['post_content'] = ".//p/parent::*"
 
 		# Author Xpath's. Relative to post
 		xpaths['post_author'] = './/a[@data-hovercard][2]'  # First is link from picture, withour name
@@ -130,14 +134,19 @@ class GroupParser(object):
 
 	def _extract_group_info(self, group_id):
 		"""
-		Extract group info. Browser is already at group page
+		Extract group info.
 		:return Group instance
 		"""
-		group_name_xpath = '//input[@placeholder="Search Facebook"]/@value'
+		group_name_xpath = '//input[@aria-label="Search Facebook" or @tabindex="-1"]/@value'
 		group_members_xpath = '//span[@id="count_text"]/text()'
 		group_members_amount_regex = re.compile(r'[\d,]+')
 
+		group_url = 'https://facebook.com/{id}'
+		self.driver.get(group_url.format(id=group_id))
+		time.sleep(5)
+
 		page_source = self.driver.page_source
+
 		html_tree = html.fromstring(page_source)
 
 		group_name = html_tree.xpath(group_name_xpath)[0]
@@ -261,7 +270,7 @@ class GroupParser(object):
 		"""
 
 		post_content_lst = post_node.xpath(self._xpaths['post_content'])
-		post_content = '\n'.join(post_content_lst)
+		post_content = '\n'.join(map(lambda x: x.text_content(), post_content_lst))
 
 		return self._parse_info_from_text(post_content)
 
@@ -351,13 +360,20 @@ class GroupParser(object):
 
 		all_posts = html_tree.xpath(self._xpaths['full_post'])
 		if not all_posts:
-			return None
+			raise ClosedGroupException("Probably got to a Closed group")
+
+		last_timestamp = None
 
 		for post in all_posts:
 			author_info = self._parse_user_info(post)
 			comments = post.xpath(self._xpaths['post_comments'])
 			commenters_infos = self._parse_user_infos_from_comment(comments)
+
+			previous_timestamp = last_timestamp  # Save previous in case current is None
 			current_post, last_timestamp = self._parse_post(post)
+			if not last_timestamp:
+				last_timestamp = previous_timestamp  # last_timestamp is previous again (which isn't None)
+
 			current_user_post = UserPost(author=author_info, group=group, post=current_post, commenters=commenters_infos)
 			export_to_file.write_single_user_post(current_user_post, output_file)
 
@@ -424,46 +440,44 @@ class GroupParser(object):
 		if 'GROUP_ID' in first_line:
 			return False
 
-		output_file.write(("GROUP_ID\tGROUP_NAME\tPOST_ID\tPOST_TIME\tACTION\tFULL_NAME"
+		output_file.write(("GROUP_ID\tGROUP_NAME\tGROUP_MEMBERS_AMOUNT\tPOST_ID\tPOST_TIME\tACTION\tFULL_NAME"
 							"\tUSER_NAME\tUSER_ID\tINFO_KIND\tINFO_CANONIZED_VALUE\tINFO_ORIGINAL_VALUE\r\n"
 		                   ))
 
 		return True
 
-	def _parse_group(self, group_id, user_id, reload_amount=400):
+	def _parse_group(self, group, user_id, reload_amount=400):
 		"""
 		parse single group
 		returns true if it got to a page there wasn't anything to extract (It got to the bottom)
 		return false if it didn't get to the end
 		"""
 
-		group_url = 'https://facebook.com/{id}'.format(id=group_id)
-
-		self.driver.get(group_url.format(id=group_id))
-		time.sleep(5)
-		current_group = self._extract_group_info(group_id)
+		group_url = 'https://facebook.com/{id}'.format(id=group.id)
+		if not group.id in self.driver.current_url:
+			self.driver.get(group_url)
+			time.sleep(5)
 
 		reload_id = 2
 		payload_html = self.driver.page_source
 
-		with open(r'C:\Users\sid\desktop\output.txt', 'ab+') as output:
+		with open(r'C:\Users\sid\desktop\output1.txt', 'ab+') as output:
 			self._init_output_file(output)
 			for i in xrange(2, reload_amount + 1):
 				# Parse reload_amount of pages
 				try:
-					result_tuple = self._parse_page(current_group, payload_html, output)
+					result_tuple = self._parse_page(group, payload_html, output)
 				except html.etree.XMLSyntaxError:
-					print "Didn't find XML in URL: {0}".format(next_url)
-				if not result_tuple:
 					# Probably got to the end
 					return True, i
+
 				last_post_id, last_timestamp = result_tuple
 
 				if i % 10 == 0:
 					# Flush each 10 pages
 					output.flush()
 
-				next_url = self._get_next_url(last_post_id, last_timestamp, group_id, user_id, reload_id)
+				next_url = self._get_next_url(last_post_id, last_timestamp, group.id, user_id, reload_id)
 				reload_id += 1
 				self.driver.get(next_url)
 
@@ -482,7 +496,14 @@ class GroupParser(object):
 		"""
 		reload_amount = stronger_value(self.reload_amount, reload_amount)
 		for group_id in self.group_ids:
-			absolute_crawl = self._parse_group(group_id, user_id, reload_amount=reload_amount)
+			current_group = self._extract_group_info(group_id)
+			print 'Starting to parse group: {0}'.format(current_group.name.encode('utf-8'))
+			try:
+				absolute_crawl = self._parse_group(current_group, user_id, reload_amount=reload_amount)
+			except ClosedGroupException:
+				print "The group is closed. This script only parses open groups!"
+				continue
+			print 'Done parsing group: {0}\nParsed everything: {1}'.format(current_group.name.encode('utf-8'), absolute_crawl)
 
 	def run(self, reload_amount=None):
 		"""
@@ -494,9 +515,10 @@ class GroupParser(object):
 
 		if my_id is None:
 			raise Exception("User id not found in homepage")
-
-		self._parse_all_groups(user_id=my_id, reload_amount=reload_amount)
-		self.driver.quit()
+		try:
+			self._parse_all_groups(user_id=my_id, reload_amount=reload_amount)
+		finally:
+			self.driver.quit()
 
 
 class UserInfo(object):
@@ -616,6 +638,7 @@ def main():
 
 	group_parser = GroupParser(email=email, password=password, reload_amount=amount, group_ids=group_ids)
 	group_parser.run()
+	raw_input('Enter anything to finish')
 
 if __name__ == '__main__':
 	main()
