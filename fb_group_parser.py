@@ -373,7 +373,7 @@ class GroupParser(object):
             commenters_infos = self._parse_user_infos_from_comment(comments)
             
             previous_timestamp = last_timestamp  # Save previous in case current is None
-            current_post, last_timestamp = self._parse_post(post)
+            current_post, last_timestamp = self._parse_post(group, author_info, post)
 
             if not last_timestamp:
                 last_timestamp = previous_timestamp  # last_timestamp is previous again (which isn't None)
@@ -436,24 +436,6 @@ class GroupParser(object):
         payload_html = payload.replace(r'\u003C', '<')
         return self._html_parser.unescape(payload_html)
     
-    def _init_output_file(self, output_file):
-        """
-        :param output_file: handle to output file (ab+)
-        :return: initialized headers if it isn't already. True if it got initiated now, False otherwise
-        """
-        
-        first_line = output_file.readline().upper()
-        output_file.seek(0)  # Set cursor to beginning
-        
-        if 'GROUP_ID' in first_line:
-            return False
-        
-        output_file.write(("GROUP_ID\tGROUP_NAME\tGROUP_MEMBERS_AMOUNT\tPOST_ID\tPOST_TIME\tACTION\tFULL_NAME"
-                           "\tUSER_NAME\tUSER_ID\tINFO_KIND\tINFO_CANONIZED_VALUE\tINFO_ORIGINAL_VALUE\r\n"
-                           ))
-        
-        return True
-    
     def _parse_group(self, group, user_id, output, reload_amount=400):
         """
         parse single group
@@ -469,7 +451,6 @@ class GroupParser(object):
         reload_id = 2
         payload_html = self.driver.page_source
 
-        self._init_output_file(output)
         for i in xrange(2, reload_amount + 1):
             # Parse reload_amount of pages
             try:

@@ -49,7 +49,7 @@ def _write_user_action(user, action, output_file):
     :return:
     """
 
-    output_file.write("{action}_user\t{u_id}\t{u_u_name}\t{u_f_name}".format(action=action,
+    output_file.write("{action}_user\t{u_id}\t{u_u_name}\t{u_f_name}\r\n".format(action=action,
                                                                              u_id=user.id,
                                                                              u_u_name=user.user_name,
                                                                              u_f_name=user.full_name))
@@ -100,7 +100,7 @@ def _write_post_action(post, action, output_file):
         date_time = post.date_time.strftime("%d/%m/%Y %H:%M")
 
 
-    output_file.write("{action}_post\t{p_id}\t{g_id}\t{u_id}\t{p_time}".format(action=action,
+    output_file.write("{action}_post\t{p_id}\t{g_id}\t{u_id}\t{p_time}\r\n".format(action=action,
                                                                                p_id=post.id,
                                                                                g_id=post.group_id,
                                                                                u_id=post.user_id,
@@ -128,7 +128,8 @@ def write_user_post(user_post, output_file):
     write_post_start(user_post.post, output_file)  # user_id of author is written there
 
     write_user_infos(user_post.author, 'author', output_file)
-    write_user_infos(user_post.commenters, 'commenter', output_file)
+    for commenter in user_post.commenters:
+        write_user_infos(commenter, 'commenter', output_file)
 
     write_post_end(user_post.post, output_file)
 
@@ -140,8 +141,12 @@ def write_user_infos(user, action, output_file, encoding='utf-8'):
     We MUST also write user_id because of the commenters. Author's user_id can be found be joining to the post
     """
 
+    output_file.write("add_user\t{id}\t{user_name}\t{full_name}\r\n".format(id=user.id,
+                                                                            user_name=user.user_name,
+                                                                            full_name=user.full_name))
+
     if not user.infos:
-        user.infos.append(('', '', ''))  # At least the user will be written
+        user.infos.add(('', '', ''))  # At least the user will be written
 
     for info in user.infos:
         output_file.write("add_info\t{u_id}\t{action}\t{i_kind}\t{i_canonized}\t{i_original}\r\n".format(
