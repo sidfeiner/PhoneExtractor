@@ -121,7 +121,7 @@ class FormatList(list):
 			                                                                      alt=orred_regexes)
 		elif country_code:
 			# Country code given, but optional
-			final_regex = "{start_anchor}(?P<phone>(0*{country}{sep})?{zero}{alt}){end_anchor}".format(
+			final_regex = "{start_anchor}(?P<phone>0*({country}{sep})?{zero}{alt}){end_anchor}".format(
 				start_anchor=start_anchor,
 				end_anchor=end_anchor,
 				country=country_code,

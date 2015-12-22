@@ -61,7 +61,7 @@ class GroupParser(object):
 		regexes['fid_from_url'] = re.compile(r'\?id=(?P<result>\d+)')
 
 		# Finds emails
-		regexes['emails'] = re.compile(r'([\w.-]+(@|&#064;)[\w.-]{2,}(\.[\w.-]{2,}){1,2})')
+		regexes['emails'] = re.compile(r'([\w.-]+(@|&#064;)[\w-]{2,}(\.[\w-]{2,}){1,4})')
 
 		# Extract post_id from id attribute
 		regexes['post_id'] = re.compile(r'mall_post_(?P<result>\d+)')
@@ -244,7 +244,8 @@ class GroupParser(object):
 
 		emails = self._regexes['emails'].findall(text)
 		for email in emails:
-			canonized_email = email[0].replace('#&064;', '@')  # email is a tuple. email[0] is full email
+			canonized_email = email[0].replace('#&064;', '@').lower()  # email is a tuple. email[0] is full email
+			canonized_email = canonized_email.strip('.')
 			info_tuples.add((canonized_email, canonized_email.lower(), 'email'))
 
 		return info_tuples
@@ -461,7 +462,7 @@ class GroupParser(object):
 		reload_id = 2
 		payload_html = self.driver.page_source
 
-		with open(r'C:\Users\sid\desktop\output1.txt', 'ab+') as output:
+		with open(r'C:\Users\sid\desktop\output.txt', 'ab+') as output:
 			self._init_output_file(output)
 			for i in xrange(2, reload_amount + 1):
 				# Parse reload_amount of pages
