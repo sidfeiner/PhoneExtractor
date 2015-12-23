@@ -490,6 +490,9 @@ class GroupParser(object):
                 try:
                     export_to_file.write_group_start(current_group, output)
                     absolute_crawl = self._parse_group(current_group, user_id, output, reload_amount=reload_amount)
+                    if absolute_crawl[0]:
+                        export_to_file.write_absolute_parse(current_group, output)
+
                 except ClosedGroupException:
                     print "The group is closed. This script only parses open groups!"
                     continue

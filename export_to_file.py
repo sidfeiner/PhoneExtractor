@@ -162,3 +162,13 @@ def write_user_infos(user, action, output_file, encoding='utf-8'):
             i_canonized=info[0].encode(encoding),
             i_original=info[1].encode(encoding))
         )
+
+def write_absolute_parse(group, output_file):
+    """
+    :param group: Group instance we have absolutely parsed
+    :param output_file: File to write to
+    :return:
+    Writes a command that group has absolutely been parsed
+    """
+
+    output_file.write("abs_parse\t{id}\r\n".format(id=group.id))
