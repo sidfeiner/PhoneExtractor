@@ -122,7 +122,7 @@ def import_file(file_path, delimiter='\t'):
                 insert_info(values[1:], post_id, cursor)
 
             files_written += 1
-            if files_written % 500 == 0:
+            if files_written % 1000 == 0:
                 print 'imported {0} rows'.format(files_written)
                 conn.commit()
 
