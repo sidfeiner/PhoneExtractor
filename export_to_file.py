@@ -86,7 +86,7 @@ def write_post_end(post, output_file):
     """
     _write_post_action(post, 'end', output_file)
 
-def _write_post_action(post, action, output_file):
+def _write_post_action(post, action, output_file, encoding='utf-8'):
     """
     :param post: Post we have an action for (start/end parsing)
     :param action: start/end
@@ -100,23 +100,27 @@ def _write_post_action(post, action, output_file):
         date_time = post.date_time.strftime("%d/%m/%Y %H:%M")
 
 
-    output_file.write("{action}_post\t{p_id}\t{g_id}\t{u_id}\t{p_time}\r\n".format(action=action,
-                                                                               p_id=post.id,
-                                                                               g_id=post.group_id,
-                                                                               u_id=post.user_id,
-                                                                               p_time=date_time))
+    output_file.write("{action}_post\t{p_id}\t{g_id}\t{u_id}\t{p_time}\r\n".format(action=action.encode(encoding),
+                                                                               p_id=post.id.encode(encoding),
+                                                                               g_id=post.group_id.encode(encoding),
+                                                                               u_id=post.user_id.encode(encoding),
+                                                                               p_time=date_time.encode(encoding)
+                                                                               )
+                      )
 
-def _write_group_action(group, action, output_file):
+def _write_group_action(group, action, output_file, encoding='utf-8'):
     """
     :param group: Group we have an action for (start/end parsing)
     :param action: start/end
     :param output_file: file to write to
     :return:
     """
-    output_file.write("{action}_group\t{g_id}\t{g_name}\t{g_member}\r\n".format(action=action,
-                                                                                g_id=group.id,
-                                                                                g_name=group.name,
-                                                                                g_member=group.members))
+    output_file.write("{action}_group\t{g_id}\t{g_name}\t{g_member}\r\n".format(action=action.encode(encoding),
+                                                                                g_id=group.id.encode(encoding),
+                                                                                g_name=group.name.encode(encoding),
+                                                                                g_member=group.members
+                                                                                )
+                      )
 
 def write_user_post(user_post, output_file):
     """
@@ -141,9 +145,11 @@ def write_user_infos(user, action, output_file, encoding='utf-8'):
     We MUST also write user_id because of the commenters. Author's user_id can be found be joining to the post
     """
 
-    output_file.write("add_user\t{id}\t{user_name}\t{full_name}\r\n".format(id=user.id,
-                                                                            user_name=user.user_name,
-                                                                            full_name=user.full_name))
+    output_file.write("add_user\t{id}\t{user_name}\t{full_name}\r\n".format(id=user.id.encode(encoding),
+                                                                            user_name=user.user_name.encode(encoding),
+                                                                            full_name=user.full_name.encode(encoding)
+                                                                            )
+                      )
 
     if not user.infos:
         user.infos.add(('', '', ''))  # At least the user will be written
