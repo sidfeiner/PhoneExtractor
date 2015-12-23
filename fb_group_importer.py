@@ -37,7 +37,6 @@ def insert_group(values_array, db_cursor):
     db_cursor.execute(GROUP_INSERT,
                              {'id': group_id, 'name': group_name, 'members': nullify(members_amount),
                               'last': datetime.now()})
-    print 'added group'
 
     return group_id
 
@@ -88,6 +87,19 @@ def insert_info(values_array, post_id, db_cursor):
     db_cursor.execute(USER_INFO_INSERT, (
                 user_id, post_id, action, nullify(info_kind), nullify(canonized_info), nullify(original_info)))
 
+def update_abs_parse(values_array, db_cursor):
+    """
+    :param values_array: Value of arrays (just group id in this case)
+    :param db_cursor: Cursor to MySQL DB
+    :return:
+    """
+
+    UPDATE_STATEMENT = "UPDATE FACEBOOK.GROUPS SET EXTRACTED_ALL = TRUE WHERE ID = %s"
+
+    group_id = values_array[0]
+
+    db_cursor.execute(UPDATE_STATEMENT, (group_id,))
+
 
 def import_file(file_path, delimiter='\t'):
     """
@@ -95,9 +107,6 @@ def import_file(file_path, delimiter='\t'):
     :return:
     """
     print 'importing file:', file_path
-
-
-
 
     conn = connector.connect(user='root',
                              password='hujiko',
@@ -111,7 +120,7 @@ def import_file(file_path, delimiter='\t'):
         for line in input_file.xreadlines():
             values = line.split(delimiter)
             cmd = values[0].lower().strip()  # First value is commands
-
+            print cmd, line
             if cmd == 'start_group':
                 group_id = insert_group(values[1:], cursor)  # Insert to db, and save group_id
             elif cmd == 'start_post':
@@ -120,11 +129,15 @@ def import_file(file_path, delimiter='\t'):
                 user_id = insert_user(values[1:], cursor)  # Insert user to DB and save user_id
             elif cmd == 'add_info':
                 insert_info(values[1:], post_id, cursor)
+            elif cmd == 'abs_parse':
+                update_abs_parse(values[1:])
 
             files_written += 1
             if files_written % 1000 == 0:
-                print 'imported {0} rows'.format(files_written)
+                print 'processed {0} rows'.format(files_written)
                 conn.commit()
+
+        conn.commit()  # files that weren't committed because 1000 wasnt hit
 
     print 'DONE IMPORTING'
 
