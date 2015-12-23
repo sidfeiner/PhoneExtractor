@@ -484,6 +484,7 @@ class GroupParser(object):
         """
         reload_amount = stronger_value(self.reload_amount, reload_amount)
         with open(r"C:\Users\Sid\Desktop\output.txt", 'ab+') as output:
+            output.write("\r\n")  # Like that BOM won't be in fron of command
             for group_id in self.group_ids:
                 current_group = self._extract_group_info(group_id)
                 print 'Starting to parse group: {0}'.format(current_group.name.encode('utf-8'))
