@@ -480,7 +480,7 @@ class GroupParser(object):
                 payload_html = self._fix_payload(payload)
 
         output.flush()
-        return False
+        return False, i
 
     def _parse_all_groups(self, user_id, reload_amount=400):
         """
@@ -665,14 +665,10 @@ def get_wanted_group_ids():
 
     QUERY = """
             SELECT
-                id,
-                CASE
-                    WHEN last_post_unix IS NULL THEN 0
-                    ELSE last_post_unix
-                END AS last_post_unix
+                id, last_post_unix, last_extraction
             FROM
                 facebook.group_summary
-            ORDER BY last_post_unix ASC
+            ORDER BY LAST_EXTRACTION ASC
             LIMIT 5
             """
 
@@ -683,7 +679,7 @@ def get_wanted_group_ids():
 
     for result in results:
         group_id, timestamp_unix = result
-        results_set.add(group_id, timestamp_unix - 60 * 60 * 2)  # Remove 2 hours from timestamp to be sure not to miss any posts
+        results_set.add((group_id, timestamp_unix - 60 * 60 * 2))  # Remove 2 hours from timestamp to be sure not to miss any posts
 
     conn.close()
 
@@ -701,7 +697,7 @@ if __name__ == '__main__':
         params_dict = dict(
             email=args[0],
             password=args[1],
-            reload_amount=args[2],
+            reload_amount=int(args[2]),
             group_ids=group_ids
         )
 
