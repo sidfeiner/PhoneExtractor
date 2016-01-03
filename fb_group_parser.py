@@ -9,11 +9,9 @@ __author__ = 'Sid'
 #
 ##############################################
 
-import re
-import time
+import re, time, sys, json
 from datetime import datetime
 from base64 import b64encode
-import json
 from HTMLParser import HTMLParser
 
 from selenium import webdriver
@@ -21,6 +19,7 @@ from lxml import html
 
 import export_to_file
 import canonization
+from mysql import connector
 
 # Constants
 _USERNAME = 'username_from_url'
@@ -595,7 +594,7 @@ def get_group_ids():
     group_id = raw_input("Enter group id(s):\n")
     while group_id not in ['', 'done', 'exit']:
         current_ids = pattern.findall(group_id)  # Find all group ids entered
-        map(lambda x: group_ids.add(x), current_ids)  # add them to set
+        map(lambda x: group_ids.add((x, 0)), current_ids)  # add them to set. 0 is to indicate to parse everything
         group_id = raw_input("Enter group id(s): ")
     
     return group_ids
@@ -627,19 +626,80 @@ def get_reload_amount():
         amount = raw_input("Enter the amount of pages you want to load in each group: ")
     return int(amount)
 
-
-def main():
+def main(params_dict=None):
     """
     Gets input for script
+    :param params_dict: dicts with group_ids, email, password and reload_amount
     """
-    group_ids = get_group_ids()  # gets a set
-    email, password = get_user_info()
-    amount = get_reload_amount()
-    
+    if params_dict is None:
+        group_ids = get_group_ids()  # gets a set
+        email, password = get_user_info()
+        amount = get_reload_amount()
+    else:
+        group_ids = params_dict['group_ids']
+        email = params_dict['email']
+        password = params_dict['password']
+        amount = params_dict['reload_amount']
+
     group_parser = GroupParser(email=email, password=password, reload_amount=amount, group_ids=group_ids)
     group_parser.run()
     raw_input('Enter anything to finish')
 
 
+def get_wanted_group_ids():
+    """
+    :return: Queries MySql DB for latest group id's and timestamp of every last post extracted
+    """
+
+    conn = connector.connect(user='root',
+                             password='hujiko',
+                             host='127.0.0.1',
+                             database='facebook')
+
+    cursor = conn.cursor()
+
+    QUERY = """
+            SELECT
+                id,
+                CASE
+                    WHEN last_post_unix IS NULL THEN 0
+                    ELSE last_post_unix
+                END AS last_post_unix
+            FROM
+                facebook.group_summary
+            ORDER BY last_post_unix ASC
+            LIMIT 5
+            """
+
+    cursor.execute(QUERY)
+    results = cursor.fetchall()
+
+    results_set = set()
+
+    for result in results:
+        group_id, timestamp_unix = result
+        results_set.add(group_id, timestamp_unix - 60 * 60 * 2)  # Remove 2 hours from timestamp to be sure not to miss any posts
+
+    conn.close()
+
+    return results_set
+
 if __name__ == '__main__':
+    if 2 <= len(sys.argv) <= 5:
+        args = sys.argv[1:]
+
+        if len(args) == 4:
+            group_ids = args[3]
+        elif len(args) == 3:
+            group_ids = get_wanted_group_ids()
+
+        params_dict = dict(
+            email=args[0],
+            password=args[1],
+            reload_amount=args[2],
+            group_ids=group_ids
+        )
+
+        main(params_dict)
+
     main()
