@@ -9,7 +9,7 @@ __author__ = 'Sid'
 #
 ##############################################
 
-import re, time, sys, json
+import re, time, sys, json, export_to_file, canonization
 from datetime import datetime
 from base64 import b64encode
 from HTMLParser import HTMLParser
@@ -17,8 +17,6 @@ from HTMLParser import HTMLParser
 from selenium import webdriver
 from lxml import html
 
-import export_to_file
-import canonization
 from mysql import connector
 
 # Constants
