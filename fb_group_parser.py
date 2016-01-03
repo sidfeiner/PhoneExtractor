@@ -678,7 +678,7 @@ def get_wanted_group_ids():
     results_set = set()
 
     for result in results:
-        group_id, timestamp_unix = result
+        group_id, timestamp_unix, _ = result
         results_set.add((group_id, timestamp_unix - 60 * 60 * 2))  # Remove 2 hours from timestamp to be sure not to miss any posts
 
     conn.close()
@@ -702,5 +702,5 @@ if __name__ == '__main__':
         )
 
         main(params_dict)
-
-    main()
+    else:
+        main()

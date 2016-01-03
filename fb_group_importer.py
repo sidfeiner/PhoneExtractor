@@ -53,7 +53,6 @@ def insert_post(values_array, db_cursor):
         date_time = datetime.strptime(post_datetime, '%d/%m/%Y %H:%M')
     except ValueError:
         date_time = None
-    print post_datetime, date_time
 
     db_cursor.execute(POST_INSERT, {'id': post_id, 'group_id': group_id, 'user_id': user_id, 'datetime': date_time})
 
