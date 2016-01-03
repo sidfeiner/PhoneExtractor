@@ -435,7 +435,7 @@ class GroupParser(object):
         payload_html = payload.replace(r'\u003C', '<')
         return self._html_parser.unescape(payload_html)
     
-    def _parse_group(self, group, user_id, output, reload_amount=400):
+    def _parse_group(self, group, last_timestamp_unix, user_id, output, reload_amount=400):
         """
         parse single group
         returns true if it got to a page there wasn't anything to extract (It got to the bottom)
@@ -456,9 +456,12 @@ class GroupParser(object):
                 result_tuple = self._parse_page(group, payload_html, output)
             except html.etree.XMLSyntaxError:
                 # Probably got to the end
+                output.flush()
                 return True, i
 
             last_post_id, last_timestamp = result_tuple
+            if last_timestamp is not None and last_timestamp < last_timestamp_unix:
+                break  # From here on, posts have already been written in DB
 
             if i % 10 == 0:
                 # Flush each 10 pages
@@ -472,9 +475,11 @@ class GroupParser(object):
                 # First time isn't from an ajax request
                 payload = self._parse_payload_from_ajax_response(self.driver.page_source)
                 if payload is None:
+                    output.flush()
                     raise Exception("Next json payload couldn't be loaded")
                 payload_html = self._fix_payload(payload)
 
+        output.flush()
         return False
 
     def _parse_all_groups(self, user_id, reload_amount=400):
@@ -484,12 +489,12 @@ class GroupParser(object):
         reload_amount = stronger_value(self.reload_amount, reload_amount)
         with open(r"C:\Users\Sid\Desktop\output.txt", 'ab+') as output:
             output.write("\r\n")  # Like that BOM won't be in fron of command
-            for group_id in self.group_ids:
+            for group_id, last_post_unix in self.group_ids:
                 current_group = self._extract_group_info(group_id)
                 print 'Starting to parse group: {0}'.format(current_group.name.encode('utf-8'))
                 try:
                     export_to_file.write_group_start(current_group, output)
-                    absolute_crawl = self._parse_group(current_group, user_id, output, reload_amount=reload_amount)
+                    absolute_crawl = self._parse_group(current_group, last_post_unix, user_id, output, reload_amount=reload_amount)
                     if absolute_crawl[0]:
                         export_to_file.write_absolute_parse(current_group, output)
 
