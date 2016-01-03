@@ -94,7 +94,7 @@ def _write_post_action(post, action, output_file, encoding='utf-8'):
     :return:
     """
 
-    if not post.date_time:
+    if post.date_time is None:
         date_time = ''
     else:
         date_time = post.date_time.strftime("%d/%m/%Y %H:%M")
@@ -150,7 +150,6 @@ def write_user_infos(user, action, output_file, encoding='utf-8'):
                                                                             full_name=user.full_name.encode(encoding)
                                                                             )
                       )
-
     if not user.infos:
         user.infos.add(('', '', ''))  # At least the user will be written
 

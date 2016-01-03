@@ -53,6 +53,7 @@ def insert_post(values_array, db_cursor):
         date_time = datetime.strptime(post_datetime, '%d/%m/%Y %H:%M')
     except ValueError:
         date_time = None
+    print post_datetime, date_time
 
     db_cursor.execute(POST_INSERT, {'id': post_id, 'group_id': group_id, 'user_id': user_id, 'datetime': date_time})
 
@@ -118,9 +119,8 @@ def import_file(file_path, delimiter='\t'):
     files_written = 0
     with open(file_path, 'rb') as input_file:
         for line in input_file.xreadlines():
-            values = line.split(delimiter)
+            values = line.strip('\r\n').split(delimiter)
             cmd = values[0].lower().strip()  # First value is commands
-            print cmd, line
             if cmd == 'start_group':
                 group_id = insert_group(values[1:], cursor)  # Insert to db, and save group_id
             elif cmd == 'start_post':
@@ -130,7 +130,7 @@ def import_file(file_path, delimiter='\t'):
             elif cmd == 'add_info':
                 insert_info(values[1:], post_id, cursor)
             elif cmd == 'abs_parse':
-                update_abs_parse(values[1:])
+                update_abs_parse(values[1:], cursor)
 
             files_written += 1
             if files_written % 1000 == 0:
