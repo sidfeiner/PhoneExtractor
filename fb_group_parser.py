@@ -459,7 +459,9 @@ class GroupParser(object):
 
             last_post_id, last_timestamp = result_tuple
             if last_timestamp is not None and last_timestamp < last_timestamp_unix:
-                break  # From here on, posts have already been written in DB
+                # From here on, posts have already been written in DB
+                output.flush()
+                return True, i
 
             if i % 10 == 0:
                 # Flush each 10 pages
