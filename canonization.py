@@ -121,11 +121,9 @@ class CountryCanonizer(object):
             return None
 
         simple_canon, success = self._canonize_simple(phone_number)
-        print 'simple', simple_canon
         simple_canon = {simple_canon}  # Save it into a set
         if not success:
             extracted, success = self._try_extract(phone_number)
-            print 'extracted', extracted
         else:
             extracted = simple_canon
 
