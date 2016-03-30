@@ -236,3 +236,7 @@ def create_all_canonizers(is_strict=True, is_canonized=True):
         canonizers[country] = CountryCanonizer(phone_format)
 
     return canonizers
+
+if __name__ == '__main__':
+    isr = create_israeli_canonizer()
+    print isr.canonize('052-8197720/21/22')

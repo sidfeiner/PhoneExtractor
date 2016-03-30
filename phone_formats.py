@@ -30,15 +30,15 @@ class FormatList(list):
     Allows exporting to many different formats
     """
 
-    def __init__(self, format_list=list(), country_code='', strict=True, canonized=True):
+    def __init__(self, format_list=list(), country_code='', is_strict=True, is_canonized=True):
         super(FormatList, self).__init__(format_list)
-        self._is_canonized = canonized
-        self._is_strict = strict
+        self._is_canonized = is_canonized
+        self._is_strict = is_strict
         self.country_code = country_code
 
     def copy(self):
-        return FormatList(self, country_code=self.country_code, strict=self._is_strict,
-                          canonized=self._is_canonized)
+        return FormatList(self, country_code=self.country_code, is_strict=self._is_strict,
+                          is_canonized=self._is_canonized)
 
     def to_find_regex(self, strict=False, country_code='', optional_country=False, canonized=True, stuck_zero=False):
         """
@@ -57,9 +57,8 @@ class FormatList(list):
                                        optional_country=optional_country,
                                        canonized=canonized, stuck_zero=stuck_zero)
 
-    def _create_full_regex(self, absolute_anchors=True, strict=False, country_code='', optional_country=False,
-                           canonized=True,
-                           stuck_zero=False):
+    def _create_full_regex(self, absolute_anchors=True, is_strict=None, country_code='', optional_country=False,
+                           is_canonized=None, stuck_zero=False):
         """
         create full regex based on anchors.
         absolute_anchors True: ^ and $
@@ -67,9 +66,9 @@ class FormatList(list):
         stuck_zero: allow zeroes between country and prefix
         """
 
-        is_strict = _stronger_value(self._is_strict, strict)
+        is_strict = _stronger_value(self._is_strict, is_strict)
         country_code = _stronger_value(self.country_code, country_code)
-        is_canonized = _stronger_value(self._is_canonized, canonized)
+        is_canonized = _stronger_value(self._is_canonized, is_canonized)
 
         orred_regexes = self._create_orred_regexes(canonized=is_canonized)
 
@@ -203,7 +202,7 @@ class FormatList(list):
 
 class Phone(object):
     def __init__(self, comment='', is_strict=True, is_canonized=True):
-        self.formats = FormatList(strict=is_strict, canonized=is_canonized)
+        self.formats = FormatList(is_strict=is_strict, is_canonized=is_canonized)
         self.comment = comment
 
     def add_format(self, phone_format):
@@ -247,6 +246,8 @@ class CountryPhone(object):
                  is_strict=True, is_canonized=True, phones_dict=None):
         self.country = country
         self.country_code = country_code
+        self._is_strict = is_strict
+        self._is_canonized = is_canonized
         if phones_dict:
             # init with dict
             self.mobile_phone, self.line_phone = self._parse_phones_dict(phones_dict,
@@ -295,46 +296,51 @@ class CountryPhone(object):
         formats.extend(self.line_phone.formats)
         return formats
 
-    def to_find_regex(self, strict=False, with_country=True, optional_country=False, canonized=True, stuck_zero=False):
+    def to_find_regex(self, is_strict=None, is_canonized=None, with_country=True, optional_country=False, stuck_zero=False):
         """
         Creates a final compiled regex that will find phone numbers
         """
-        return self._create_full_regex(absolute_anchors=False, strict=strict, with_country=with_country,
+        return self._create_full_regex(absolute_anchors=False, is_strict=is_strict, with_country=with_country,
                                        optional_country=optional_country,
-                                       canonized=canonized, stuck_zero=stuck_zero)
+                                       is_canonized=is_canonized, stuck_zero=stuck_zero)
 
-    def to_exact_regex(self, strict=False, with_country=True, optional_country=False, canonized=True, stuck_zero=False):
+    def to_exact_regex(self, is_strict=None, is_canonized=None, with_country=True, optional_country=False, stuck_zero=False):
         """
         Creates a final compiled regex that will exactly match phone number (between anchors)
         if strict or country_code are given as params, replace they are used instead of self.country_code and self._is_strict
         """
-        return self._create_full_regex(absolute_anchors=True, strict=strict, with_country=with_country,
+        return self._create_full_regex(absolute_anchors=True, is_strict=is_strict, with_country=with_country,
                                        optional_country=optional_country,
-                                       canonized=canonized, stuck_zero=stuck_zero)
+                                       is_canonized=is_canonized, stuck_zero=stuck_zero)
 
-    def _create_full_regex(self, absolute_anchors=True, strict=True, with_country=True, optional_country=False,
-                           canonized=True, stuck_zero=False):
+    def _create_full_regex(self, absolute_anchors=True, is_strict=None, is_canonized=None, with_country=True,
+                           optional_country=False, stuck_zero=False):
         """
-        :param absolute_anchors:
-        :param strict:
+        :param absolute_anchors: Phone numbers are part of text
+        :param strict: Must have country code
         :param with_country: flag to add country code or nor
         :param canonized: with or without separators
         :return: regex of country phone
         """
-        format_list = FormatList(self.get_phone_formats())
+
+        is_canonized = _stronger_value(self._is_canonized, is_canonized)
+        is_strict = _stronger_value(self._is_strict, is_strict)
+
+        format_list = FormatList(self.get_phone_formats(), country_code=self.country_code,
+            is_strict=is_strict, is_canonized=is_canonized)
 
         if with_country:
             return format_list._create_full_regex(absolute_anchors=absolute_anchors,
-                                                  strict=strict,
+                                                  is_strict=is_strict,
                                                   country_code=self.country_code,
                                                   optional_country=optional_country,
-                                                  canonized=canonized,
+                                                  is_canonized=is_canonized,
                                                   stuck_zero=stuck_zero)
 
         return format_list._create_full_regex(absolute_anchors=absolute_anchors,
-                                              strict=strict,
+                                              is_strict=is_strict,
                                               optional_country=optional_country,
-                                              canonized=canonized,
+                                              is_canonized=is_canonized,
                                               stuck_zero=stuck_zero)
 
     def _parse_phones_dict(self, phones_dict, is_strict=True, is_canonized=True):
