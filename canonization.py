@@ -54,19 +54,20 @@ class CountryCanonizer(object):
         """
 
         # Canonizing regexes (positive priority)
+        # Every value in this dict is (search_regex, replace_regex, is_considered_canonizing, action_order)
 
         # Trims + and 0 from beginning, non numbers from end
         trim_regex = re.compile(r'^[\s+0]*(?P<phone>.+)\D*$')
-        self._regexes_dict['trimmer'] = (trim_regex, r'\g<phone>', 0)
+        self._regexes_dict['trimmer'] = (trim_regex, r'\g<phone>', False, 0)
 
         # Reverse prefix and number
         # Comes as first canonization technique because when we remove all non-digits, this regex might be spammy
         reversing_regex = re.compile(self._create_reversed_regexes())
-        self._regexes_dict['reversed'] = (reversing_regex, '\\g<pre{i}>\\g<num{i}>', 1)  # many capturing names
+        self._regexes_dict['reversed'] = (reversing_regex, '\\g<pre{i}>\\g<num{i}>', True, 1)  # many capturing names
 
         # Keep only numbers
         only_numbers_regex = re.compile(r'\D')
-        self._regexes_dict['only_numbers'] = (only_numbers_regex, '', 2)
+        self._regexes_dict['only_numbers'] = (only_numbers_regex, '', False, 2)
 
         alternatives = self._create_alternatives()
 
@@ -75,18 +76,18 @@ class CountryCanonizer(object):
             country=self._country_phone.country_code,
             alt=alternatives
         ))
-        self._regexes_dict['stuck_zeroes'] = (stuck_zeroes_regex, r'\1\2', 3)  # remove zeroes
+        self._regexes_dict['stuck_zeroes'] = (stuck_zeroes_regex, r'\1\2', True, 3)  # remove zeroes
 
         # Adds country code
         no_country_code_regex = re.compile(r'^({alt})$'.format(alt=alternatives))
         self._regexes_dict['no_country_code'] = (
-            no_country_code_regex, "{country}\\1".format(country=self._country_phone.country_code), 4)
+            no_country_code_regex, "{country}\\1".format(country=self._country_phone.country_code), True, 4)
 
         # END canonizing regexes
 
-        temp_lst = sorted(self._regexes_dict.values(), lambda x, y: x[2] - y[2])
-        self._regexes_lst = [(item[0], item[1]) for item in temp_lst if
-                             item[2] >= 0]  # remove priority as its based on index
+        temp_lst = sorted(self._regexes_dict.values(), lambda x, y: x[3] - y[3])
+        self._regexes_lst = [(item[0], item[1], item[2]) for item in temp_lst if
+                             item[3] >= 0]  # remove priority as its based on index
 
         # General rexes (negative priority)
         # Number parts
@@ -187,14 +188,12 @@ class CountryCanonizer(object):
         """
 
         canonize_success = False
-
         for index, regex_repl in enumerate(self._regexes_lst):
             # pass phone number through regexes (trimming, reversing, removing stuck zeroe, adding country code)
-            regex, replace = regex_repl
+            regex, replace, should_canonize = regex_repl
             match = regex.search(phone_number)
             if match:
-                if index != 0:
-                    # index = 0 is trimming regex. will always match but doesnt mean number has been edited
+                if should_canonize:
                     canonize_success = True
                 if index == 1:
                     # reversing
