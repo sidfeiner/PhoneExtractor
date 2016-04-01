@@ -62,7 +62,7 @@ class CountryCanonizer(object):
 
         # Reverse prefix and number
         # Comes as first canonization technique because when we remove all non-digits, this regex might be spammy
-        reversing_regex = re.compile(self._create_reversed_regexes())
+        reversing_regex = re.compile("^{0}$".format(self._create_reversed_regexes()))
         self._regexes_dict['reversed'] = (reversing_regex, '\\g<pre{i}>\\g<num{i}>', True, 1)  # many capturing names
 
         # Keep only numbers
@@ -72,7 +72,7 @@ class CountryCanonizer(object):
         alternatives = self._create_alternatives()
 
         # Removes 0 after country code
-        stuck_zeroes_regex = re.compile("^({country})0*{alt}".format(
+        stuck_zeroes_regex = re.compile("^({country})0*{alt}$".format(
             country=self._country_phone.country_code,
             alt=alternatives
         ))
@@ -108,6 +108,13 @@ class CountryCanonizer(object):
             if value is not None:
                 index = re.search(r'\d+$', key).group()
                 return index
+
+    def canonizemany(self, phone_numbers):
+        """
+        :param phone_numbers: List of phone numbers we want to canonize
+        :return: List containing a set with every canonization possibily
+        """
+        return map(self.canonize, phone_numbers)
 
     def canonize(self, phone_number):
         """
@@ -238,4 +245,4 @@ def create_all_canonizers(is_strict=True, is_canonized=True):
 
 if __name__ == '__main__':
     isr = create_israeli_canonizer()
-    print isr.canonize('052-8197720/21/22')
+    print isr.canonizemany(['+00972-52-8197720/21/22', '+00972-03-456123', '+00972-03-4446123'])

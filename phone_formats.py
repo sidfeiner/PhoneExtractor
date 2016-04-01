@@ -147,9 +147,9 @@ class FormatList(list):
         basic_regexes = []
 
         for index, phone_format in enumerate(self):
-            current_regex = "(?P<num{i}>(\\d{sep1}){{{min},{max}}}\\d)0*{sep2}(?P<pre{i}>{prefix})$".format(
-                prefix=phone_format.prefix, sep1=GENERAL_SEPARATOR, sep2=OBLIGATED_SEPARATOR,
-                min=phone_format.min_length - 1, max=phone_format.max_length - 1, i=len(basic_regexes))
+            current_regex = "(?P<num{i}>\\d{{{min},{max}}})0*{sep}(?P<pre{i}>{prefix})".format(
+                prefix=phone_format.prefix, sep=OBLIGATED_SEPARATOR,
+                min=phone_format.min_length, max=phone_format.max_length, i=len(basic_regexes))
             basic_regexes.append(current_regex)
 
         return basic_regexes
