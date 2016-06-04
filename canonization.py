@@ -121,6 +121,9 @@ class CountryCanonizer(object):
         canonize a phone number (country_code+prefix+digits)
         """
 
+        if phone_number is None:
+            return None
+            
         # Remove '+' and '0' from beginning and non-numbers from end
         trimmed_match = self._regexes_dict['trimmer'][0].search(phone_number)
         if trimmed_match:
