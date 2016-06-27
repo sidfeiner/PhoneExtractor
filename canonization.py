@@ -37,7 +37,7 @@ class CountryCanonizer(object):
 
     def _create_alternatives(self):
         formats = self._country_phone.get_phone_formats()
-        return formats._create_orred_regexes(canonized=True)
+        return formats._create_orred_regexes(is_canonized=True)
 
     def _create_reversed_regexes(self):
         """
@@ -123,7 +123,7 @@ class CountryCanonizer(object):
 
         if phone_number is None:
             return None
-            
+
         # Remove '+' and '0' from beginning and non-numbers from end
         trimmed_match = self._regexes_dict['trimmer'][0].search(phone_number)
         if trimmed_match:
